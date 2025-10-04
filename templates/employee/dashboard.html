@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Dashboard{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>My Expenses</h1>
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Pending</h5>
+                    <h2>{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Approved</h5>
+                    <h2>{{ approved_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Rejected</h5>
+                    <h2>{{ rejected_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <h3>My Expense History</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.id }}</td>
+                    <td>{{ expense.currency }} {{ expense.amount }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td><span class="badge bg-{{ 'success' if expense.status == 'approved' else 'warning' if expense.status == 'pending' else 'danger' }}">{{ expense.status }}</span></td>
+                    <td>{{ expense.expense_date }}</td>
+                    <td><a href="{{ url_for('employee.view_expense', expense_id=expense.id) }}" class="btn btn-sm btn-info">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

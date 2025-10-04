@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Expense{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Submit New Expense</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data" id="expenseForm">
+                <div class="mb-3">
+                    <label for="receipt" class="form-label">Receipt (Optional - OCR Scan)</label>
+                    <input type="file" class="form-control" id="receipt" name="receipt" accept="image/*">
+                    <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="scanReceipt()">Scan Receipt with OCR</button>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="currency" class="form-label">Currency</label>
+                        <select class="form-select" id="currency" name="currency" required>
+                            {% for curr in currencies %}
+                            <option value="{{ curr }}">{{ curr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="expense_date" class="form-label">Expense Date</label>
+                    <input type="date" class="form-control" id="expense_date" name="expense_date" required>
+                </div>
+                <div class="mb-3">
+                    <label for="vendor_name" class="form-label">Vendor Name</label>
+                    <input type="text" class="form-control" id="vendor_name" name="vendor_name">
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Expense</button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function scanReceipt() {
+    const fileInput = document.getElementById('receipt');
+    if (!fileInput.files[0]) {
+        alert('Please select a receipt image first');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('receipt', fileInput.files[0]);
+    
+    fetch('{{ url_for("employee.ocr_scan") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.data.amount) document.getElementById('amount').value = data.data.amount;
+            if (data.data.date) document.getElementById('expense_date').value = data.data.date;
+            if (data.data.vendor) document.getElementById('vendor_name').value = data.data.vendor;
+            if (data.data.description) document.getElementById('description').value = data.data.description;
+            alert('Receipt scanned successfully!');
+        } else {
+            alert('Failed to scan receipt: ' + data.message);
+        }
+    })
+    .catch(error => alert('Error scanning receipt'));
+}
+</script>
+{% endblock %}

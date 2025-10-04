@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Edit Employee</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="full_name" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role" required>
+                        <option value="employee" {% if user.role == 'employee' %}selected{% endif %}>Employee</option>
+                        <option value="manager" {% if user.role == 'manager' %}selected{% endif %}>Manager</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="manager_id" class="form-label">Manager</label>
+                    <select class="form-select" id="manager_id" name="manager_id">
+                        <option value="">No Manager</option>
+                        {% for manager in managers %}
+                        <option value="{{ manager.id }}" {% if user.manager_id == manager.id %}selected{% endif %}>{{ manager.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                    <input type="password" class="form-control" id="password" name="password">
+                </div>
+                <button type="submit" class="btn btn-primary">Update Employee</button>
+                <a href="{{ url_for('admin.employees') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

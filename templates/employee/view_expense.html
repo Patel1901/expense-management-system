@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Expense Details{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Expense #{{ expense.id }}</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Amount:</strong> {{ expense.currency }} {{ expense.amount }}</p>
+                    <p><strong>Company Currency:</strong> {{ current_user.company.currency }} {{ expense.amount_in_company_currency }}</p>
+                    <p><strong>Category:</strong> {{ expense.category }}</p>
+                    <p><strong>Date:</strong> {{ expense.expense_date }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Vendor:</strong> {{ expense.vendor_name or 'N/A' }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if expense.status == 'approved' else 'warning' if expense.status == 'pending' else 'danger' }}">{{ expense.status }}</span></p>
+                    <p><strong>Submitted:</strong> {{ expense.submitted_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+            </div>
+            <hr>
+            <p><strong>Description:</strong></p>
+            <p>{{ expense.description }}</p>
+            {% if expense.receipt_path %}
+            <hr>
+            <p><strong>Receipt:</strong></p>
+            <img src="/{{ expense.receipt_path }}" class="img-fluid" style="max-width: 400px;">
+            {% endif %}
+            <hr>
+            <h5>Approval History</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Approver</th>
+                        <th>Status</th>
+                        <th>Comments</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approval in expense.approvals %}
+                    <tr>
+                        <td>{{ approval.approver.full_name }}</td>
+                        <td><span class="badge bg-{{ 'success' if approval.status == 'approved' else 'warning' if approval.status == 'pending' else 'danger' }}">{{ approval.status }}</span></td>
+                        <td>{{ approval.comments or '-' }}</td>
+                        <td>{{ approval.decision_at.strftime('%Y-%m-%d %H:%M') if approval.decision_at else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <a href="{{ url_for('employee.dashboard') }}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+</div>
+{% endblock %}

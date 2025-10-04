@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Employees{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Employees</h1>
+    <a href="{{ url_for('admin.create_employee') }}" class="btn btn-primary mb-3">Add Employee</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Manager</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for employee in employees %}
+            <tr>
+                <td>{{ employee.full_name }}</td>
+                <td>{{ employee.email }}</td>
+                <td>{{ employee.role }}</td>
+                <td>{{ employee.manager.full_name if employee.manager else '-' }}</td>
+                <td><a href="{{ url_for('admin.edit_employee', user_id=employee.id) }}" class="btn btn-sm btn-info">Edit</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

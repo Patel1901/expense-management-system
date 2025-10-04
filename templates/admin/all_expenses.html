@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}All Expenses{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>All Expenses</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Employee</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.id }}</td>
+                <td>{{ expense.employee.full_name }}</td>
+                <td>{{ current_user.company.currency }} {{ expense.amount_in_company_currency }}</td>
+                <td>{{ expense.category }}</td>
+                <td><span class="badge bg-{{ 'success' if expense.status == 'approved' else 'warning' if expense.status == 'pending' else 'danger' }}">{{ expense.status }}</span></td>
+                <td>{{ expense.submitted_at.strftime('%Y-%m-%d') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

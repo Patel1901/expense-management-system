@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Approval Rule{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Create Approval Rule</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Rule Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="rule_type" class="form-label">Rule Type</label>
+                    <select class="form-select" id="rule_type" name="rule_type" required>
+                        <option value="sequential">Sequential (Step by Step)</option>
+                        <option value="percentage">Percentage Based</option>
+                        <option value="specific">Specific Approver</option>
+                        <option value="hybrid">Hybrid (Percentage OR Specific)</option>
+                    </select>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_manager_first" name="is_manager_first" checked>
+                    <label class="form-check-label" for="is_manager_first">Manager approves first</label>
+                </div>
+                <div class="mb-3" id="percentage_field" style="display:none;">
+                    <label for="percentage_required" class="form-label">Required Approval Percentage</label>
+                    <input type="number" class="form-control" id="percentage_required" name="percentage_required" min="1" max="100">
+                </div>
+                <div class="mb-3" id="specific_field" style="display:none;">
+                    <label for="specific_approver_id" class="form-label">Specific Approver</label>
+                    <select class="form-select" id="specific_approver_id" name="specific_approver_id">
+                        <option value="">Select Approver</option>
+                        {% for approver in approvers %}
+                        <option value="{{ approver.id }}">{{ approver.full_name }} ({{ approver.role }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3" id="approvers_field">
+                    <label class="form-label">Approval Steps (in order)</label>
+                    <div id="approvers-container">
+                        <select class="form-select mb-2" name="approver_ids[]">
+                            <option value="">Select Approver</option>
+                            {% for approver in approvers %}
+                            <option value="{{ approver.id }}">{{ approver.full_name }} ({{ approver.role }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="addApprover()">Add Another Step</button>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Rule</button>
+                <a href="{{ url_for('admin.approval_rules') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('rule_type').addEventListener('change', function() {
+    const type = this.value;
+    document.getElementById('percentage_field').style.display = (type === 'percentage' || type === 'hybrid') ? 'block' : 'none';
+    document.getElementById('specific_field').style.display = (type === 'specific' || type === 'hybrid') ? 'block' : 'none';
+    document.getElementById('approvers_field').style.display = (type === 'sequential') ? 'block' : 'none';
+});
+
+function addApprover() {
+    const container = document.getElementById('approvers-container');
+    const select = container.querySelector('select').cloneNode(true);
+    select.value = '';
+    container.appendChild(select);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Approval{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Review Expense #{{ approval.expense.id }}</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>Expense Details</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Employee:</strong> {{ approval.expense.employee.full_name }}</p>
+                    <p><strong>Amount:</strong> {{ current_user.company.currency }} {{ approval.expense.amount_in_company_currency }}</p>
+                    <p><strong>Category:</strong> {{ approval.expense.category }}</p>
+                    <p><strong>Date:</strong> {{ approval.expense.expense_date }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Vendor:</strong> {{ approval.expense.vendor_name or 'N/A' }}</p>
+                    <p><strong>Description:</strong> {{ approval.expense.description }}</p>
+                </div>
+            </div>
+            {% if approval.expense.receipt_path %}
+            <hr>
+            <p><strong>Receipt:</strong></p>
+            <img src="/{{ approval.expense.receipt_path }}" class="img-fluid" style="max-width: 400px;">
+            {% endif %}
+        </div>
+    </div>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>Your Decision</h5>
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="comments" class="form-label">Comments</label>
+                    <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
+                </div>
+                <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+                <button type="submit" name="action" value="reject" class="btn btn-danger">Reject</button>
+                <a href="{{ url_for('manager.dashboard') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

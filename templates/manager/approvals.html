@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Approvals{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>All Approvals</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Expense ID</th>
+                <th>Employee</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Decision Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for approval in approvals %}
+            <tr>
+                <td>{{ approval.expense.id }}</td>
+                <td>{{ approval.expense.employee.full_name }}</td>
+                <td>{{ current_user.company.currency }} {{ approval.expense.amount_in_company_currency }}</td>
+                <td><span class="badge bg-{{ 'success' if approval.status == 'approved' else 'warning' if approval.status == 'pending' else 'danger' }}">{{ approval.status }}</span></td>
+                <td>{{ approval.decision_at.strftime('%Y-%m-%d %H:%M') if approval.decision_at else '-' }}</td>
+                <td>
+                    {% if approval.status == 'pending' %}
+                    <a href="{{ url_for('manager.review_approval', approval_id=approval.id) }}" class="btn btn-sm btn-primary">Review</a>
+                    {% else %}
+                    <span class="text-muted">{{ approval.comments or 'No comments' }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

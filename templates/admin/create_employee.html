@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Employee{% endblock %}
+
+{% block content %}
+<div class="py-4">
+    <h1>Create Employee</h1>
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="full_name" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role" required>
+                        <option value="employee">Employee</option>
+                        <option value="manager">Manager</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="manager_id" class="form-label">Manager</label>
+                    <select class="form-select" id="manager_id" name="manager_id">
+                        <option value="">No Manager</option>
+                        {% for manager in managers %}
+                        <option value="{{ manager.id }}">{{ manager.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Employee</button>
+                <a href="{{ url_for('admin.employees') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
