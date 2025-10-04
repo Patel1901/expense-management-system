@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Expense Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cool Gray Neutrals with a Teal Accent -->
+    <!-- Application Structure Plan: The SPA is designed as a task-oriented dashboard. The primary user task—submitting an expense—is placed prominently in a dedicated section for immediate access. The secondary task—reviewing expense history and summaries—is organized into a main content area. This structure separates action from analysis, creating a clear and efficient user flow. The dashboard layout uses key metric cards for a quick overview, a donut chart for visual spending analysis by category, and a filterable table for detailed expense tracking. This was chosen to empower employees to both manage and understand their expenses within a single, cohesive view, without needing to navigate between different pages. -->
+    <!-- Visualization & Content Choices: 
+        - New Expense Form -> Goal: Data Entry -> Presentation: HTML Form -> Interaction: Input fields & submit button -> Justification: Standard, intuitive method for data submission -> Library/Method: HTML/JS.
+        - Summary Metrics -> Goal: Inform -> Presentation: Key Metric Cards (HTML/Tailwind) -> Interaction: None (static display) -> Justification: Provides an immediate, scannable overview of key financial totals -> Library/Method: HTML/Tailwind.
+        - Spending by Category -> Goal: Compare/Organize -> Presentation: Donut Chart -> Interaction: Hover tooltips show amounts -> Justification: Effectively shows the proportion of spending across different categories -> Library/Method: Chart.js (Canvas).
+        - Expense History -> Goal: Organize/Review -> Presentation: HTML Table -> Interaction: Status filter buttons dynamically update table rows -> Justification: A table is optimal for displaying detailed transactional data; filtering enhances usability by allowing users to focus on specific statuses (Pending, Approved, etc.) -> Library/Method: HTML/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 401px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .status-approved {
+            color: #059669;
+            background-color: #d1fae5;
+        }
+        .status-pending {
+            color: #d97706;
+            background-color: #fef3c7;
+        }
+        .status-rejected {
+            color: #dc2626;
+            background-color: #fee2e2;
+        }
+        .modal-overlay {
+            transition: opacity 0.2s ease-in-out;
+        }
+        .modal-box {
+            transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">My Expenses</h1>
+            <p class="text-gray-500 mt-1">Welcome, Employee. Submit and track your business expenses here.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <aside class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-sm sticky top-8">
+                    <h2 id="formTitle" class="text-xl font-semibold mb-4 text-gray-900">Submit New Expense</h2>
+                    <p id="formSubtitle" class="text-sm text-gray-500 mb-6">Fill out the form below to submit a claim. All fields are required.</p>
+                    <form id="expenseForm">
+                        <input type="hidden" id="expenseId" name="expenseId">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="expenseDate" class="block text-sm font-medium text-gray-700">Date</label>
+                                <input type="date" id="expenseDate" name="expenseDate" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                            </div>
+                             <div>
+                                <label for="expenseCategory" class="block text-sm font-medium text-gray-700">Category</label>
+                                <select id="expenseCategory" name="expenseCategory" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                                    <option>Travel</option>
+                                    <option>Meals</option>
+                                    <option>Software</option>
+                                    <option>Office Supplies</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="col-span-2">
+                                    <label for="expenseAmount" class="block text-sm font-medium text-gray-700">Amount</label>
+                                    <input type="number" id="expenseAmount" name="expenseAmount" placeholder="150.00" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="expenseCurrency" class="block text-sm font-medium text-gray-700">Currency</label>
+                                    <select id="expenseCurrency" name="expenseCurrency" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm">
+                                        <option>USD</option>
+                                        <option>EUR</option>
+                                        <option>GBP</option>
+                                        <option>INR</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="expenseDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea id="expenseDescription" name="expenseDescription" rows="3" placeholder="e.g., Team lunch with clients" required class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-6 space-y-2">
+                             <button type="submit" id="submitButton" class="w-full bg-teal-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow-sm hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200">
+                                Submit Claim
+                            </button>
+                             <button type="button" id="cancelButton" class="w-full bg-gray-100 text-gray-700 font-semibold py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-200">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                    <div id="successMessage" class="hidden mt-4 p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+                        Expense submitted successfully!
+                    </div>
+                </div>
+            </aside>
+            
+            <div class="lg:col-span-2 space-y-8">
+                <section id="summary" class="bg-white p-6 rounded-2xl shadow-sm">
+                     <h2 class="text-xl font-semibold mb-1 text-gray-900">Spending Summary</h2>
+                     <p class="text-sm text-gray-500 mb-6">Here is a quick overview of your expense totals and a breakdown by category.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-1 flex flex-col justify-center">
+                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                                    <p class="text-sm font-medium text-amber-700">Pending Amount</p>
+                                    <p id="pendingAmount" class="text-2xl font-bold text-amber-900 mt-1">$0.00</p>
+                                </div>
+                                <div class="bg-green-50 border border-green-200 p-4 rounded-lg">
+                                    <p class="text-sm font-medium text-green-700">Approved Total</p>
+                                    <p id="approvedAmount" class="text-2xl font-bold text-green-900 mt-1">$0.00</p>
+                                </div>
+                                <div class="bg-red-50 border border-red-200 p-4 rounded-lg col-span-1 sm:col-span-2">
+                                    <p class="text-sm font-medium text-red-700">Rejected Total</p>
+                                    <p id="rejectedAmount" class="text-2xl font-bold text-red-900 mt-1">$0.00</p>
+                                </div>
+                             </div>
+                        </div>
+                        <div class="md:col-span-1">
+                            <div class="chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="history" class="bg-white p-6 rounded-2xl shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Expense History</h2>
+                            <p class="text-sm text-gray-500 mt-1">Review the status of all your submitted expense claims.</p>
+                        </div>
+                        <div id="filter-buttons" class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+                             <button data-filter="all" class="filter-btn active px-3 py-1.5 text-sm font-medium rounded-md transition">All</button>
+                             <button data-filter="pending" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md transition">Pending</button>
+                             <button data-filter="approved" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md transition">Approved</button>
+                             <button data-filter="rejected" class="filter-btn px-3 py-1.5 text-sm font-medium rounded-md transition">Rejected</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseTableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                        </table>
+                        <p id="no-expenses" class="text-center py-8 text-gray-500">No expense claims found.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div id="deleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 modal-overlay opacity-0 pointer-events-none">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md m-4 modal-box transform scale-95 opacity-0">
+            <div class="p-6">
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900">Delete Expense</h3>
+                        <p class="mt-2 text-sm text-gray-500">Are you sure you want to delete this expense claim? This action cannot be undone.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-2xl">
+                <button id="cancelDelete" type="button" class="bg-white py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Cancel
+                </button>
+                <button id="confirmDelete" type="button" class="bg-red-600 py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            let expenses = [
+                { id: 1, date: '2025-09-22', category: 'Meals', description: 'Lunch with Acme Corp team', amount: 185.50, currency: 'USD', status: 'approved' },
+                { id: 2, date: '2025-09-20', category: 'Travel', description: 'Flight to New York for conference', amount: 540.00, currency: 'USD', status: 'approved' },
+                { id: 3, date: '2025-09-18', category: 'Software', description: 'Annual subscription for design tool', amount: 200.00, currency: 'USD', status: 'approved' },
+                { id: 4, date: '2025-09-25', category: 'Office Supplies', description: 'New monitors for the team', amount: 800.00, currency: 'USD', status: 'pending' },
+                { id: 5, date: '2025-09-15', category: 'Travel', description: 'Taxi from airport to hotel', amount: 65.00, currency: 'EUR', status: 'rejected' },
+                { id: 6, date: '2025-10-01', category: 'Meals', description: 'Coffee for the team meeting', amount: 25.75, currency: 'USD', status: 'pending' }
+            ];
+
+            const form = document.getElementById('expenseForm');
+            const tableBody = document.getElementById('expenseTableBody');
+            const successMessage = document.getElementById('successMessage');
+            const noExpensesMessage = document.getElementById('no-expenses');
+            const cancelButton = document.getElementById('cancelButton');
+
+            const pendingAmountEl = document.getElementById('pendingAmount');
+            const approvedAmountEl = document.getElementById('approvedAmount');
+            const rejectedAmountEl = document.getElementById('rejectedAmount');
+            
+            const deleteModal = document.getElementById('deleteModal');
+            const modalBox = deleteModal.querySelector('.modal-box');
+            const confirmDeleteBtn = document.getElementById('confirmDelete');
+            const cancelDeleteBtn = document.getElementById('cancelDelete');
+            let expenseIdToDelete = null;
+
+            let categoryChart;
+
+            function renderTable(filter = 'all') {
+                tableBody.innerHTML = '';
+                const filteredExpenses = expenses.filter(expense => filter === 'all' || expense.status === filter);
+
+                if (filteredExpenses.length === 0 && expenses.length > 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500">No expenses match the filter.</td></tr>`;
+                    noExpensesMessage.classList.add('hidden');
+                } else if (expenses.length === 0) {
+                    noExpensesMessage.classList.remove('hidden');
+                    tableBody.innerHTML = '';
+                } else {
+                    noExpensesMessage.classList.add('hidden');
+                    filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(expense => {
+                        const row = `
+                            <tr data-status="${expense.status}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900 font-medium">${expense.date}</div>
+                                    <div class="text-sm text-gray-500">${expense.category}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate">${expense.description}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold">${expense.amount.toFixed(2)} ${expense.currency}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <span class="status-badge status-${expense.status}">${expense.status}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                                    <button class="edit-btn text-teal-600 hover:text-teal-900" data-id="${expense.id}">Edit</button>
+                                    <button class="delete-btn text-red-600 hover:text-red-900" data-id="${expense.id}">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                }
+            }
+            
+            function showDeleteModal(id) {
+                expenseIdToDelete = id;
+                deleteModal.classList.remove('opacity-0', 'pointer-events-none');
+                modalBox.classList.remove('scale-95', 'opacity-0');
+            }
+
+            function hideDeleteModal() {
+                deleteModal.classList.add('opacity-0');
+                modalBox.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    deleteModal.classList.add('pointer-events-none');
+                    expenseIdToDelete = null;
+                }, 200);
+            }
+
+            function updateSummary() {
+                const pending = expenses.filter(e => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0);
+                const approved = expenses.filter(e => e.status === 'approved').reduce((sum, e) => sum + e.amount, 0);
+                const rejected = expenses.filter(e => e.status === 'rejected').reduce((sum, e) => sum + e.amount, 0);
+
+                pendingAmountEl.textContent = `$${pending.toFixed(2)}`;
+                approvedAmountEl.textContent = `$${approved.toFixed(2)}`;
+                rejectedAmountEl.textContent = `$${rejected.toFixed(2)}`;
+            }
+
+            function renderChart() {
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                const categories = [...new Set(expenses.map(e => e.category))];
+                const data = categories.map(category => 
+                    expenses.filter(e => e.category === category && e.status !== 'rejected')
+                            .reduce((sum, e) => sum + e.amount, 0)
+                );
+
+                const backgroundColors = ['#14b8a6', '#0891b2', '#6366f1', '#a855f7', '#ec4899'];
+                const hoverBackgroundColors = ['#0f766e', '#0e7490', '#4f46e5', '#9333ea', '#db2777'];
+                
+                if (categoryChart) categoryChart.destroy();
+
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: categories, datasets: [{ data, backgroundColor: backgroundColors, borderColor: '#ffffff', borderWidth: 2 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '70%',
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } },
+                            tooltip: { callbacks: { label: (c) => `${c.label}: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(c.parsed)}` } }
+                        }
+                    }
+                });
+            }
+
+            function exitEditMode() {
+                form.reset();
+                form.expenseId.value = '';
+                document.getElementById('formTitle').textContent = 'Submit New Expense';
+                document.getElementById('formSubtitle').textContent = 'Fill out the form below to submit a claim. All fields are required.';
+                document.getElementById('submitButton').textContent = 'Submit Claim';
+                cancelButton.textContent = 'Cancel';
+                document.getElementById('expenseDate').valueAsDate = new Date();
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = form.expenseId.value;
+
+                if (id) {
+                    const expenseIndex = expenses.findIndex(ex => ex.id == id);
+                    if(expenseIndex !== -1) {
+                        expenses[expenseIndex] = {
+                            ...expenses[expenseIndex],
+                            date: form.expenseDate.value,
+                            category: form.expenseCategory.value,
+                            description: form.expenseDescription.value,
+                            amount: parseFloat(form.expenseAmount.value),
+                            currency: form.expenseCurrency.value,
+                        };
+                    }
+                    exitEditMode();
+                } else {
+                    const newExpense = {
+                        id: Date.now(),
+                        date: form.expenseDate.value,
+                        category: form.expenseCategory.value,
+                        description: form.expenseDescription.value,
+                        amount: parseFloat(form.expenseAmount.value),
+                        currency: form.expenseCurrency.value,
+                        status: 'pending'
+                    };
+                    expenses.push(newExpense);
+                    form.reset();
+                    document.getElementById('expenseDate').valueAsDate = new Date();
+                }
+
+                successMessage.textContent = id ? 'Expense updated successfully!' : 'Expense submitted successfully!';
+                successMessage.classList.remove('hidden');
+                setTimeout(() => successMessage.classList.add('hidden'), 3000);
+                updateAll();
+            });
+
+            cancelButton.addEventListener('click', () => {
+                exitEditMode();
+            });
+            
+            document.getElementById('filter-buttons').addEventListener('click', (e) => {
+                if(e.target.classList.contains('filter-btn')) {
+                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderTable(e.target.dataset.filter);
+                }
+            });
+
+            tableBody.addEventListener('click', (e) => {
+                if(e.target.matches('.edit-btn')) {
+                    const id = e.target.dataset.id;
+                    const expenseToEdit = expenses.find(ex => ex.id == id);
+                    if (expenseToEdit) {
+                        document.getElementById('formTitle').textContent = 'Edit Expense';
+                        document.getElementById('formSubtitle').textContent = `You are editing an expense submitted on ${expenseToEdit.date}.`;
+                        document.getElementById('submitButton').textContent = 'Update Expense';
+                        cancelButton.textContent = 'Cancel Edit';
+                        
+                        form.expenseId.value = expenseToEdit.id;
+                        form.expenseDate.value = expenseToEdit.date;
+                        form.expenseCategory.value = expenseToEdit.category;
+                        form.expenseAmount.value = expenseToEdit.amount;
+                        form.expenseCurrency.value = expenseToEdit.currency;
+                        form.expenseDescription.value = expenseToEdit.description;
+                        
+                        form.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+                if(e.target.matches('.delete-btn')) {
+                    showDeleteModal(e.target.dataset.id);
+                }
+            });
+            
+            confirmDeleteBtn.addEventListener('click', () => {
+                if (expenseIdToDelete) {
+                    expenses = expenses.filter(ex => ex.id != expenseIdToDelete);
+                    hideDeleteModal();
+                    updateAll();
+                }
+            });
+            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+            deleteModal.addEventListener('click', (e) => {
+                if (e.target === deleteModal) {
+                    hideDeleteModal();
+                }
+            });
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .filter-btn.active { background-color: #fff; color: #14b8a6; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+                .filter-btn:not(.active) { color: #6b7280; }
+            `;
+            document.head.appendChild(style);
+
+            function updateAll() {
+                const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+                renderTable(activeFilter);
+                updateSummary();
+                renderChart();
+            }
+
+            document.getElementById('expenseDate').valueAsDate = new Date();
+            updateAll();
+        });
+    </script>
+</body>
+</html>
+
